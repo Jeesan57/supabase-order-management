@@ -37,9 +37,39 @@ function processCustomerFromCustomerData(customerData) {
   return processedCustomerData;
 }
 
+function processAddressesFromData(data) {
+  let proccessedAddresses = [];
+
+  let rawAddresses = data?.order?.get?.customer?.addresses;
+
+  for (let i = 0; i < rawAddresses?.length; i++) {
+    let currentAddress = {
+      address_id: rawAddresses[i]?.id,
+      address_type: rawAddresses[i]?.type,
+      geocode: null,
+      house_no: rawAddresses[i]?.streetNumber,
+      street: rawAddresses[i]?.street,
+      locality: null,
+      landmark: null,
+      postal_code: rawAddresses[i]?.postalCode,
+      city: rawAddresses[i]?.city,
+      state: rawAddresses[i]?.state,
+      country: rawAddresses[i]?.country,
+    }
+    proccessedAddresses.push(currentAddress);
+  }
+  return proccessedAddresses;
+
+}
+
 async function saveCustomerToDatabase(customerData) {
   await supabase.from('customers').upsert([customerData]);
 }
+
+async function saveAddressesToDatabase(addresses) {
+  await supabase.from('address').upsert([...addresses]);
+}
+
 
 serve(async (req: any) => {
 
@@ -49,6 +79,10 @@ serve(async (req: any) => {
   // processCustomerData and save data to database
   const processedCustomerData = processCustomerFromCustomerData(requestData?.order?.get?.customer);
   await saveCustomerToDatabase(processedCustomerData);
+
+  // process addresses and upsert them to database
+  const proccessedAddresses = processAddressesFromData(requestData);
+  await saveAddressesToDatabase(proccessedAddresses);
 
 
 
@@ -60,7 +94,8 @@ serve(async (req: any) => {
 
   return new Response(
     JSON.stringify({
-      data: processedCustomerData,
+      customer: processedCustomerData,
+      addresses: proccessedAddresses,
     }),
     { headers: { "Content-Type": "application/json" } },
   )
