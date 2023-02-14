@@ -23,6 +23,45 @@ const supabase = createClient(supabase_url, supabase_anon_key);
 // upsert the addresses data to the address table
 
 
+function formatDateAndTime(isoString) {
+  const isoRegex = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2}).(\d{3})Z$/;
+  if (!isoRegex.test(isoString)) {
+    // Return the formatted date and time as an object
+    return { date: null, time: null };
+  }
+
+  const date = new Date(isoString);
+
+  // Get the date components
+  const day = date.getDate();
+  const month = date.getMonth() + 1;
+  const year = date.getFullYear();
+
+  // Get the time components
+  const hours = date.getHours();
+  const minutes = date.getMinutes();
+  const seconds = date.getSeconds();
+
+  // Format the date and time strings
+  const dateString = `${day}/${month}/${year}`;
+  const timeString = `${hours}:${minutes}:${seconds}`;
+
+  // Return the formatted date and time as an object
+  return { date: dateString, time: timeString };
+}
+
+
+function addDaysToIsoDate(isoString, days) {
+  const date = new Date(isoString);
+  const newDate = new Date(date.getTime() + days * 24 * 60 * 60 * 1000);
+  const year = newDate.getFullYear();
+  const month = String(newDate.getMonth() + 1).padStart(2, '0');
+  const day = String(newDate.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+
+
 
 
 function processCustomerFromCustomerData(customerData) {
@@ -71,6 +110,123 @@ async function saveAddressesToDatabase(addresses) {
 }
 
 
+function getDeliveryAddressID(addresses) {
+  let delivery_address_id = null;
+  for (let i = 0; i < addresses.length; i++) {
+    if (addresses[i]?.type === 'delivery') {
+      delivery_address_id = addresses[i]?.address_id;
+      break;
+    }
+  }
+  return delivery_address_id;
+}
+
+function getDeliveryAddressCity(addresses) {
+  let delivery_address_city = null;
+  for (let i = 0; i < addresses.length; i++) {
+    if (addresses[i]?.type === 'delivery') {
+      delivery_address_city = addresses[i]?.city;
+      break;
+    }
+  }
+  return delivery_address_city;
+}
+
+// Mumbai => mumbai MumBai => lowecase
+// mumbai => mumbai hyperlocal
+
+function getDeliveryType(city) {
+  // "if city = mumbai”, “मुंबई“, “thane”, “ठाणे, ""Navi Mumbai"" , ""नवी मुंबई""
+  // then Delivery Type = Mumbai_hyperlocal
+  // else Delivery Type = rest_of_India"
+  let delivery_type = "rest_of_India";
+  // check city case (capital/small)
+  if (
+    city.toLowerCase() === "mumbai" ||
+    city === "मुंबई" ||
+    city.toLowerCase() === "thane" ||
+    city === "ठाणे" ||
+    city.toLowerCase() === "navi mumbai"
+    || city === "नवी मुंबई") {
+    delivery_type = "Mumbai_hyperlocal";
+  }
+  return delivery_type;
+}
+
+function isSingleOrder(order) {
+  let isSingle = true;
+  // "if product metadata path = /category/flexi-subscriptions/*
+  // then Subs for for 1 - (n - 1) and Subs(L) for nth
+  // else Single Order"
+
+  // str.includes('MongoDB')
+
+  for (let i = 0; i < order?.meta?.length; i++) {
+    if (order?.meta[i].key === "path") {
+      let pathValue = order?.meta[i].value;
+      if (pathValue.includes('category/flexi-subscriptions')) {
+        isSingle = false;
+        break;
+      }
+    }
+  }
+
+  return isSingle;
+
+
+}
+
+
+// either {single: true, order:{}}
+// or {single: false, orders: [{}, {}, {}]}
+function processOrders(data) {
+
+
+  let orders = [];
+
+  for (let i = 0; i < data?.order?.get?.cart?.length; i++) {
+    // if Order is single order
+    if (isSingleOrder(data?.order?.get?.cart[i])) {
+      let order = {
+        order_id: data?.order?.get?.id,
+        created_at_date: formatDateAndTime(data?.order?.get?.createdAt).date, // need to change
+        created_at_time: formatDateAndTime(data?.order?.get?.createdAt).time, // need to change
+        order_nmv: data?.order?.get?.cart[i]?.price?.net,
+        order_gmv: data?.order?.get?.cart[i]?.price?.gross,
+        discount: 0, // need to confirm in meeting
+        discount_code: null, // need to confirm in meeting
+        delivery_fee: null, // need to confirm in meeting
+        currency: data?.order?.get?.cart[i]?.price?.currency,
+        razorpay_order_id: null, // need to confirm in meeting
+        razoerpay_receipt: null, // need to confirm in meeting
+        customer_id: data?.order?.get?.customer?.identifier,
+        delivery_address_id: getDeliveryAddressID(data?.order?.get?.customer?.addresses),
+        product_sku: data?.order?.get?.cart[i]?.sku,
+        quantity: data?.order?.get?.cart[i]?.quantity,
+        payment_status: "Paid Online",
+        delivery_type: getDeliveryType(getDeliveryAddressCity(data?.order?.get?.customer?.addresses)),
+        courier_name: '',
+        courier_utr: '',
+        delivery_status: 'Not Scheduled',
+        order_type: 'Single Order',
+        subs_delivery: null,
+        delivery_date: addDaysToIsoDate(data?.order?.get?.createdAt, 1), // need to change
+        refund_status: null,
+      }
+      orders.push(order);
+    }
+    // else sheduled
+    else {
+
+    }
+  }
+
+  return orders;
+
+
+}
+
+
 serve(async (req: any) => {
 
   // recieved responseData
@@ -84,6 +240,8 @@ serve(async (req: any) => {
   const proccessedAddresses = processAddressesFromData(requestData);
   await saveAddressesToDatabase(proccessedAddresses);
 
+  let processedOrders = processOrders(requestData);
+
 
 
 
@@ -96,6 +254,8 @@ serve(async (req: any) => {
     JSON.stringify({
       customer: processedCustomerData,
       addresses: proccessedAddresses,
+      orders: processedOrders,
+
     }),
     { headers: { "Content-Type": "application/json" } },
   )
