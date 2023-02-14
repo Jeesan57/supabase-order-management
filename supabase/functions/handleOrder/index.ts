@@ -3,17 +3,29 @@
 // This enables autocomplete, go to definition, etc.
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-console.log("Hello from Functions!")
+
+// get payload data from supabase request
+// 
 
 serve(async (req: any) => {
-  const { name } = await req.json()
-  const data = {
-    message: `Hello ${name}!`,
-  }
+
+  const { order } = await req.json()
+
+
+  const supabase_url = 'https://cllzwjybsifnrmniohek.supabase.co';
+  const supabase_anon_key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNsbHp3anlic2lmbnJtbmlvaGVrIiwicm9sZSI6ImFub24iLCJpYXQiOjE2NzYxMzU2MjIsImV4cCI6MTk5MTcxMTYyMn0._2utFu2ai_4KEIZBGjDLU-R_0r4ef7Ktu3imtD2uxx0'
+  const supabase = createClient(supabase_url, supabase_anon_key);
+
+
+  let { data, error } = await supabase.from('address').select('*');
 
   return new Response(
-    JSON.stringify(data),
+    JSON.stringify({
+      data: data,
+      order: order
+    }),
     { headers: { "Content-Type": "application/json" } },
   )
 })

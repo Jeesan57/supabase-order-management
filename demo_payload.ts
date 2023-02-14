@@ -1,4 +1,169 @@
-export const orders: unknown = { "order": { "get": { "id": "63e63bcbe6a311cac4ffc25a", "createdAt": "2023-02-10T12:42:51.000Z", "updatedAt": "2023-02-10T12:42:51.000Z", "customer": { "identifier": "9137659330", "firstName": "Divyash", "lastName": "Pant", "email": null, "phone": null, "externalReferences": null, "meta": null, "addresses": [{ "id": "billing-1", "type": "billing", "city": "Mumbai", "country": "India", "streetNumber": "A 201", "postalCode": "400072", "state": "Maharashtra", "street": "Datta Guru Society", "street2": null, "lastName": null, "firstName": null }, { "id": "delivery-2", "type": "delivery", "city": "Mumbai", "country": "India", "streetNumber": "A 201", "postalCode": "400072", "state": "Maharashtra", "street": "Datta Guru Society", "street2": null, "lastName": null, "firstName": null }] }, "cart": [{ "name": "Instant Mushroom Noodles", "sku": "instant-mushroom-noodles", "meta": [{ "key": "brandName", "value": null }, { "key": "size", "value": "85gm" }], "quantity": 2, "price": { "currency": "INR", "gross": 80, "net": 80 } }, { "name": "Oatmeal Bread (Gluten-Free, Dairy-Free)", "sku": "oatmeal-bread", "meta": [{ "key": "brandName", "value": null }, { "key": "size", "value": "350gm" }], "quantity": 1, "price": { "currency": "INR", "gross": 165, "net": 165 } }, { "name": "Free Range Eggs", "sku": "a-unique-sku-735608705067575", "meta": [{ "key": "brandName", "value": null }, { "key": "size", "value": "Half Dozen" }], "quantity": 2, "price": { "currency": "INR", "gross": 278, "net": 278 } }, { "name": "Sorghum Loaf Subscription", "sku": "sorghum-loaf-subscription-1662815355942", "meta": [{ "key": "brandName", "value": null }, { "key": "size", "value": "350gm" }, { "key": "path", "value": "/category/flexi-subscriptions/gluten-free-bread-subs/sorghum-loaf-subscription" }, { "key": "brandName", "value": null }, { "key": "size", "value": "350gm" }, { "key": "baseProductSku", "value": "oatmeal-bread" }, { "key": "duration", "value": "4" }, { "key": "quantityPerDelivery", "value": "1" }, { "key": "schedule", "value": "Tuesday, Friday" }, { "key": "startDate", "value": "17/02/2023" }], "quantity": 8, "price": { "currency": "INR", "gross": 1440, "net": 1440 } }], "total": { "currency": "INR", "gross": 2002, "net": 2002 }, "pipelines": null } } }
+export const data: any = {
+    "order": {
+        "get": {
+            "id": "63e63bcbe6a311cac4ffc25a",
+            "createdAt": "2023-02-10T12:42:51.000Z",
+            "updatedAt": "2023-02-10T12:42:51.000Z",
+            "customer": {
+                "identifier": "9137659330",
+                "firstName": "Divyash",
+                "lastName": "Pant",
+                "email": null,
+                "phone": null,
+                "externalReferences": null,
+                "meta": null,
+                "addresses": [
+                    {
+                        "id": "billing-1",
+                        "type": "billing",
+                        "city": "Mumbai",
+                        "country": "India",
+                        "streetNumber": "A 201",
+                        "postalCode": "400072",
+                        "state": "Maharashtra",
+                        "street": "Datta Guru Society",
+                        "street2": null,
+                        "lastName": null,
+                        "firstName": null
+                    },
+                    {
+                        "id": "delivery-2",
+                        "type": "delivery",
+                        "city": "Mumbai",
+                        "country": "India",
+                        "streetNumber": "A 201",
+                        "postalCode": "400072",
+                        "state": "Maharashtra",
+                        "street": "Datta Guru Society",
+                        "street2": null,
+                        "lastName": null,
+                        "firstName": null
+                    }
+                ]
+            },
+            "cart": [
+                {
+                    "name": "Instant Mushroom Noodles",
+                    "sku": "instant-mushroom-noodles",
+                    "meta": [
+                        {
+                            "key": "brandName",
+                            "value": null
+                        },
+                        {
+                            "key": "size",
+                            "value": "85gm"
+                        }
+                    ],
+                    "quantity": 2,
+                    "price": {
+                        "currency": "INR",
+                        "gross": 80,
+                        "net": 80
+                    }
+                },
+                {
+                    "name": "Oatmeal Bread (Gluten-Free, Dairy-Free)",
+                    "sku": "oatmeal-bread",
+                    "meta": [
+                        {
+                            "key": "brandName",
+                            "value": null
+                        },
+                        {
+                            "key": "size",
+                            "value": "350gm"
+                        }
+                    ],
+                    "quantity": 1,
+                    "price": {
+                        "currency": "INR",
+                        "gross": 165,
+                        "net": 165
+                    }
+                },
+                {
+                    "name": "Free Range Eggs",
+                    "sku": "a-unique-sku-735608705067575",
+                    "meta": [
+                        {
+                            "key": "brandName",
+                            "value": null
+                        },
+                        {
+                            "key": "size",
+                            "value": "Half Dozen"
+                        }
+                    ],
+                    "quantity": 2,
+                    "price": {
+                        "currency": "INR",
+                        "gross": 278,
+                        "net": 278
+                    }
+                },
+                {
+                    "name": "Sorghum Loaf Subscription",
+                    "sku": "sorghum-loaf-subscription-1662815355942",
+                    "meta": [
+                        {
+                            "key": "brandName",
+                            "value": null
+                        },
+                        {
+                            "key": "size",
+                            "value": "350gm"
+                        },
+                        {
+                            "key": "path",
+                            "value": "/category/flexi-subscriptions/gluten-free-bread-subs/sorghum-loaf-subscription"
+                        },
+                        {
+                            "key": "brandName",
+                            "value": null
+                        },
+                        {
+                            "key": "size",
+                            "value": "350gm"
+                        },
+                        {
+                            "key": "baseProductSku",
+                            "value": "oatmeal-bread"
+                        },
+                        {
+                            "key": "duration",
+                            "value": "4"
+                        },
+                        {
+                            "key": "quantityPerDelivery",
+                            "value": "1"
+                        },
+                        {
+                            "key": "schedule",
+                            "value": "Tuesday, Friday"
+                        },
+                        {
+                            "key": "startDate",
+                            "value": "17/02/2023"
+                        }
+                    ],
+                    "quantity": 8,
+                    "price": {
+                        "currency": "INR",
+                        "gross": 1440,
+                        "net": 1440
+                    }
+                }
+            ],
+            "total": {
+                "currency": "INR",
+                "gross": 2002,
+                "net": 2002
+            },
+            "pipelines": null
+        }
+    }
+}
 // headers__content_length
 // 2006
 // headers__content_type
