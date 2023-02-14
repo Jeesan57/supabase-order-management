@@ -214,34 +214,36 @@ function isSingleOrder(order) {
 
 }
 
-function getQuantityPerDelivery(meta) {
+
+
+function getQuantityPerDelivery(orderMeta) {
 
   let quantityPerDelivery = null;
-  for (let i = 0; i < meta?.length; i++) {
-    if (meta[i].key === 'quantityPerDelivery') {
-      getQuantityPerDelivery = parseInt(mata[i]?.value);
+  for (let i = 0; i < orderMeta?.length; i++) {
+    if (orderMeta[i]?.key === 'quantityPerDelivery') {
+      if (orderMeta[i]?.value) quantityPerDelivery = parseInt(orderMeta[i]?.value);
       break;
     }
   }
   return quantityPerDelivery;
 }
 
-function getStartDate(meta) {
+function getStartDate(orderMeta) {
   let startDate = null;
-  for (let i = 0; i < meta?.length; i++) {
-    if (meta[i].key === 'startDate') {
-      startDate = mata[i]?.value;
+  for (let i = 0; i < orderMeta?.length; i++) {
+    if (orderMeta[i].key === 'startDate') {
+      startDate = orderMeta[i]?.value;
       break;
     }
   }
   return startDate;
 }
 
-function getSchedule(meta) {
+function getSchedule(orderMeta) {
   let schedule = null;
-  for (let i = 0; i < meta?.length; i++) {
-    if (meta[i].key === 'schedule') {
-      schedule = mata[i]?.value;
+  for (let i = 0; i < orderMeta?.length; i++) {
+    if (orderMeta[i].key === 'schedule') {
+      schedule = orderMeta[i]?.value;
       break;
     }
   }
@@ -251,63 +253,65 @@ function getSchedule(meta) {
 
 function resolveScheduledOrders(data, orderDetails) {
 
-  return [orderDetails];
 
   let orders = [];
   // find out the number of single orders to create
-  // let quantityPerDelivery = getQuantityPerDelivery(orderDetails?.meta);
-  // let quantity = orderDetails?.quantity;
-  // let totalDeliveryCount = calculateDeliveryCount(quantity, quantityPerDelivery);
-  // let schedule = getSchedule(orderDetails?.meta);
-  // let deliveryDates = calculateDeliveryDates(data?.order?.get?.createdAt, startDate, schedule, totalDeliveryCount);
-  // let deliveryLeft = quantity;
-  // for (let i = 0; i < totalDeliveryCount; i++) {
+  let quantityPerDelivery = getQuantityPerDelivery(orderDetails?.meta);
+  let quantity = orderDetails?.quantity;
+  let totalDeliveryCount = calculateDeliveryCount(quantity, quantityPerDelivery);
+  let schedule = getSchedule(orderDetails?.meta);
+  let startDate = getStartDate(orderDetails?.meta);
+  let deliveryDates = calculateDeliveryDates(data?.order?.get?.createdAt, startDate, schedule, totalDeliveryCount);
+  let deliveryLeft = quantity;
+  for (let i = 0; i < totalDeliveryCount; i++) {
 
 
-  //   let currentQuantity;
-  //   let currentOrderType = "Subs";
-  //   if (i === totalDeliveryCount - 1) {
-  //     currentOrderType = "Subs (L)";
-  //   }
+    let currentQuantity;
+    let currentOrderType = "Subs";
+    if (i === totalDeliveryCount - 1) {
+      currentOrderType = "Subs (L)";
+    }
 
-  //   if (deliveryLeft - quantityPerDelivery >= 0) {
-  //     deliveryLeft = deliveryLeft - quantityPerDelivery;
-  //     currentQuantity = quantityPerDelivery;
-  //   }
-  //   else {
-  //     currentQuantity = deliveryLeft;
-  //     deliveryLeft = 0;
-  //   }
+    if (deliveryLeft - quantityPerDelivery >= 0) {
+      deliveryLeft = deliveryLeft - quantityPerDelivery;
+      currentQuantity = quantityPerDelivery;
+    }
+    else {
+      currentQuantity = deliveryLeft;
+      deliveryLeft = 0;
+    }
 
-  //   let order = {
-  //     order_id: data?.order?.get?.id,
-  //     created_at_date: formatDateAndTime(data?.order?.get?.createdAt).date, // need to change
-  //     created_at_time: formatDateAndTime(data?.order?.get?.createdAt).time, // need to change
-  //     order_nmv: orderDetails?.price?.net, // need to confirm in meeting
-  //     order_gmv: orderDetails?.price?.gross,
-  //     discount: 0, // need to confirm in meeting
-  //     discount_code: null, // need to confirm in meeting
-  //     delivery_fee: null, // need to confirm in meeting
-  //     currency: data?.order?.get?.cart[i]?.price?.currency,
-  //     razorpay_order_id: null, // need to confirm in meeting
-  //     razoerpay_receipt: null, // need to confirm in meeting
-  //     customer_id: data?.order?.get?.customer?.identifier,
-  //     delivery_address_id: getDeliveryAddressID(data?.order?.get?.customer?.addresses),
-  //     product_sku: data?.order?.get?.cart[i]?.sku,
-  //     quantity: currentQuantity,
-  //     payment_status: "Paid Online",
-  //     delivery_type: getDeliveryType(getDeliveryAddressCity(data?.order?.get?.customer?.addresses)),
-  //     courier_name: '',
-  //     courier_utr: '',
-  //     delivery_status: 'Scheduled',
-  //     order_type: currentOrderType,
-  //     subs_delivery: `${i + 1}/${totalDeliveryCount}`,
-  //     delivery_date: deliveryDates[i], // need to change
-  //     refund_status: null,
-  //   }
-  //   orders.push(order);
+    let order = {
+      order_id: data?.order?.get?.id,
+      created_at_date: formatDateAndTime(data?.order?.get?.createdAt).date, // need to change
+      created_at_time: formatDateAndTime(data?.order?.get?.createdAt).time, // need to change
+      order_nmv: orderDetails?.price?.net, // need to confirm in meeting
+      order_gmv: orderDetails?.price?.gross,
+      discount: 0, // need to confirm in meeting
+      discount_code: null, // need to confirm in meeting
+      delivery_fee: null, // need to confirm in meeting
+      currency: data?.order?.get?.cart[i]?.price?.currency,
+      razorpay_order_id: null, // need to confirm in meeting
+      razoerpay_receipt: null, // need to confirm in meeting
+      customer_id: data?.order?.get?.customer?.identifier,
+      delivery_address_id: getDeliveryAddressID(data?.order?.get?.customer?.addresses),
+      product_sku: data?.order?.get?.cart[i]?.sku,
+      quantity: currentQuantity,
+      payment_status: "Paid Online",
+      delivery_type: getDeliveryType(getDeliveryAddressCity(data?.order?.get?.customer?.addresses)),
+      courier_name: '',
+      courier_utr: '',
+      delivery_status: 'Scheduled',
+      order_type: currentOrderType,
+      subs_delivery: `${i + 1}/${totalDeliveryCount}`,
+      delivery_date: deliveryDates[i], // need to change
+      refund_status: null,
+    }
+    orders.push(order);
 
-  // }
+  }
+
+  return orders;
 
 }
 
