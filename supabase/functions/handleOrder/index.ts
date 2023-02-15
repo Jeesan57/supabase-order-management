@@ -148,18 +148,15 @@ async function saveAddressesToDatabase(addresses) {
 }
 
 async function saveOrdersToDatabase(orders) {
-  try {
-    await supabase.from('orders').upsert([...orders]);
-  } catch (error) {
-    throw new Error(error);
-  }
+  const { data, error } = await supabase.from('orders').upsert([...orders]);
+  return error;
 }
 
 function getDeliveryAddressID(addresses) {
   let delivery_address_id = null;
   for (let i = 0; i < addresses.length; i++) {
     if (addresses[i]?.type === 'delivery') {
-      delivery_address_id = addresses[i]?.address_id;
+      delivery_address_id = addresses[i]?.id;
       break;
     }
   }
@@ -288,21 +285,26 @@ function resolveScheduledOrders(data, orderDetails) {
       deliveryLeft = 0;
     }
 
+    let current_nmv = (orderDetails?.price?.net * currentQuantity) / totalDeliveryCount;
+    let current_gmv = (orderDetails?.price?.gross * currentQuantity) / totalDeliveryCount;
+
+
+
     let order = {
       order_id: data?.order?.get?.id,
       created_at_date: formatDateAndTime(data?.order?.get?.createdAt).date, // need to change
       created_at_time: formatDateAndTime(data?.order?.get?.createdAt).time, // need to change
-      order_nmv: orderDetails?.price?.net, // need to confirm in meeting
-      order_gmv: orderDetails?.price?.gross,
-      discount: 0, // need to confirm in meeting
+      order_nmv: current_nmv,
+      order_gmv: current_gmv,
+      discount: 0,
       discount_code: null, // need to confirm in meeting
       delivery_fee: null, // need to confirm in meeting
-      currency: data?.order?.get?.cart[i]?.price?.currency,
+      currency: orderDetails?.price?.currency,
       razorpay_order_id: null, // need to confirm in meeting
-      razoerpay_receipt: null, // need to confirm in meeting
+      razorpay_receipt: null, // need to confirm in meeting
       customer_id: data?.order?.get?.customer?.identifier,
       delivery_address_id: getDeliveryAddressID(data?.order?.get?.customer?.addresses),
-      product_sku: data?.order?.get?.cart[i]?.sku,
+      product_sku: orderDetails?.sku,
       quantity: currentQuantity,
       payment_status: "Paid Online",
       delivery_type: getDeliveryType(getDeliveryAddressCity(data?.order?.get?.customer?.addresses)),
@@ -344,7 +346,7 @@ function processOrders(data) {
         delivery_fee: null, // need to confirm in meeting
         currency: data?.order?.get?.cart[i]?.price?.currency,
         razorpay_order_id: null, // need to confirm in meeting
-        razoerpay_receipt: null, // need to confirm in meeting
+        razorpay_receipt: null, // need to confirm in meeting
         customer_id: data?.order?.get?.customer?.identifier,
         delivery_address_id: getDeliveryAddressID(data?.order?.get?.customer?.addresses),
         product_sku: data?.order?.get?.cart[i]?.sku,
@@ -389,7 +391,7 @@ serve(async (req: any) => {
   await saveAddressesToDatabase(proccessedAddresses);
 
   let processedOrders = processOrders(requestData);
-  await saveOrdersToDatabase(processedOrders);
+  let error = await saveOrdersToDatabase(processedOrders);
 
 
 
@@ -404,6 +406,7 @@ serve(async (req: any) => {
       customer: processedCustomerData,
       addresses: proccessedAddresses,
       orders: processedOrders,
+      error: error,
 
     }),
     { headers: { "Content-Type": "application/json" } },
