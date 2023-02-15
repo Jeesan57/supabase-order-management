@@ -64,7 +64,7 @@ function calculateDeliveryCount(quantity, quantityPerDelivery) {
 function formatDateAndTime(isoString) {
   const isoRegex = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2}).(\d{3})Z$/;
   if (!isoRegex.test(isoString)) {
-    // Return the formatted date and time as an object
+    // Return the formatted date and time as an object (null, null)
     return { date: null, time: null };
   }
 
@@ -147,6 +147,13 @@ async function saveAddressesToDatabase(addresses) {
   await supabase.from('address').upsert([...addresses]);
 }
 
+async function saveOrdersToDatabase(orders) {
+  try {
+    await supabase.from('orders').upsert([...orders]);
+  } catch (error) {
+    throw new Error(error);
+  }
+}
 
 function getDeliveryAddressID(addresses) {
   let delivery_address_id = null;
@@ -382,6 +389,7 @@ serve(async (req: any) => {
   await saveAddressesToDatabase(proccessedAddresses);
 
   let processedOrders = processOrders(requestData);
+  await saveOrdersToDatabase(processedOrders);
 
 
 
@@ -406,4 +414,4 @@ serve(async (req: any) => {
 // curl -i --location --request POST 'http://localhost:54321/functions/v1/' \
 //   --header 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0' \
 //   --header 'Content-Type: application/json' \
-//   --data '{"name":"Functions"}'
+//   --data '{payload_object}'
