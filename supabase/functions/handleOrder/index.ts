@@ -285,8 +285,8 @@ function resolveScheduledOrders(data, orderDetails) {
       deliveryLeft = 0;
     }
 
-    let current_nmv = (orderDetails?.price?.net * currentQuantity) / totalDeliveryCount;
-    let current_gmv = (orderDetails?.price?.gross * currentQuantity) / totalDeliveryCount;
+    let current_nmv = (orderDetails?.price?.net * currentQuantity) / quantity;
+    let current_gmv = (orderDetails?.price?.gross * currentQuantity) / quantity;
 
 
 
