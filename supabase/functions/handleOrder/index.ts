@@ -292,8 +292,8 @@ function resolveScheduledOrders(data, orderDetails) {
 
     let order = {
       order_id: data?.order?.get?.id,
-      created_at_date: formatDateAndTime(data?.order?.get?.createdAt).date, // need to change
-      created_at_time: formatDateAndTime(data?.order?.get?.createdAt).time, // need to change
+      created_at_date: formatDateAndTime(data?.order?.get?.createdAt).date,
+      created_at_time: formatDateAndTime(data?.order?.get?.createdAt).time,
       order_nmv: current_nmv,
       order_gmv: current_gmv,
       discount: 0,
@@ -313,7 +313,7 @@ function resolveScheduledOrders(data, orderDetails) {
       delivery_status: 'Scheduled',
       order_type: currentOrderType,
       subs_delivery: `${i + 1}/${totalDeliveryCount}`,
-      delivery_date: deliveryDates[i], // need to change
+      delivery_date: deliveryDates[i], 
       refund_status: null,
     }
     orders.push(order);
@@ -337,11 +337,11 @@ function processOrders(data) {
     if (isSingleOrder(data?.order?.get?.cart[i])) {
       let order = {
         order_id: data?.order?.get?.id,
-        created_at_date: formatDateAndTime(data?.order?.get?.createdAt).date, // need to change
-        created_at_time: formatDateAndTime(data?.order?.get?.createdAt).time, // need to change
+        created_at_date: formatDateAndTime(data?.order?.get?.createdAt).date,
+        created_at_time: formatDateAndTime(data?.order?.get?.createdAt).time, 
         order_nmv: data?.order?.get?.cart[i]?.price?.net,
         order_gmv: data?.order?.get?.cart[i]?.price?.gross,
-        discount: 0, // need to confirm in meeting
+        discount: 0, 
         discount_code: null, // need to confirm in meeting
         delivery_fee: null, // need to confirm in meeting
         currency: data?.order?.get?.cart[i]?.price?.currency,
@@ -358,7 +358,7 @@ function processOrders(data) {
         delivery_status: 'Not Scheduled',
         order_type: 'Single Order',
         subs_delivery: null,
-        delivery_date: addDaysToIsoDate(data?.order?.get?.createdAt, 1), // need to change
+        delivery_date: addDaysToIsoDate(data?.order?.get?.createdAt, 1), 
         refund_status: null,
       }
       orders.push(order);
