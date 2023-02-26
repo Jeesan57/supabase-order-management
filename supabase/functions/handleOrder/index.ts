@@ -313,7 +313,7 @@ function resolveScheduledOrders(data, orderDetails) {
       delivery_status: 'Scheduled',
       order_type: currentOrderType,
       subs_delivery: `${i + 1}/${totalDeliveryCount}`,
-      delivery_date: deliveryDates[i], 
+      delivery_date: deliveryDates[i],
       refund_status: null,
     }
     orders.push(order);
@@ -338,10 +338,10 @@ function processOrders(data) {
       let order = {
         order_id: data?.order?.get?.id,
         created_at_date: formatDateAndTime(data?.order?.get?.createdAt).date,
-        created_at_time: formatDateAndTime(data?.order?.get?.createdAt).time, 
+        created_at_time: formatDateAndTime(data?.order?.get?.createdAt).time,
         order_nmv: data?.order?.get?.cart[i]?.price?.net,
         order_gmv: data?.order?.get?.cart[i]?.price?.gross,
-        discount: 0, 
+        discount: 0,
         discount_code: null, // need to confirm in meeting
         delivery_fee: null, // need to confirm in meeting
         currency: data?.order?.get?.cart[i]?.price?.currency,
@@ -358,7 +358,7 @@ function processOrders(data) {
         delivery_status: 'Not Scheduled',
         order_type: 'Single Order',
         subs_delivery: null,
-        delivery_date: addDaysToIsoDate(data?.order?.get?.createdAt, 1), 
+        delivery_date: addDaysToIsoDate(data?.order?.get?.createdAt, 1),
         refund_status: null,
       }
       orders.push(order);
@@ -418,3 +418,7 @@ serve(async (req: any) => {
 //   --header 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0' \
 //   --header 'Content-Type: application/json' \
 //   --data '{payload_object}'
+
+
+// convert the times to IST
+// work with updated payload
