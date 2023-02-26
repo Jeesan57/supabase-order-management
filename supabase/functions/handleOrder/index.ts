@@ -23,6 +23,19 @@ const supabase = createClient(supabase_url, supabase_anon_key);
 // upsert the addresses data to the address table
 
 
+function createUniqueIdForCustomer(phone, email, firstName, lastName) {
+  let unique = "" + phone + email + firstName + lastName;
+  return unique;
+}
+
+
+function createUniqueIdForAddress(type, geocode, house_no, street, locality, landmark, postal_code, city, state, country) {
+  let unique = "" + type + geocode + house_no + street + locality + landmark + postal_code + city + state + country;
+  return unique;
+}
+
+
+
 function calculateDeliveryDates(isoString, startDate, schedule, totalDeliveryCount) {
   const weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -105,6 +118,7 @@ function addDaysToIsoDate(isoString, days) {
 function processCustomerFromCustomerData(customerData) {
   if (!customerData) return null;
   let processedCustomerData = {
+    unique: createUniqueIdForCustomer(customerData.phone, customerData.email, customerData.firstName, customerData.lastName),
     customer_id: customerData.identifier,
     phone: customerData.phone,
     email: customerData.email,
@@ -120,20 +134,35 @@ function processAddressesFromData(data) {
   let rawAddresses = data?.order?.get?.customer?.addresses;
 
   for (let i = 0; i < rawAddresses?.length; i++) {
-    let currentAddress = {
-      address_id: rawAddresses[i]?.id,
-      address_type: rawAddresses[i]?.type,
-      geocode: null,
-      house_no: rawAddresses[i]?.streetNumber,
-      street: rawAddresses[i]?.street,
-      locality: null,
-      landmark: null,
-      postal_code: rawAddresses[i]?.postalCode,
-      city: rawAddresses[i]?.city,
-      state: rawAddresses[i]?.state,
-      country: rawAddresses[i]?.country,
+    if (rawAddresses[i].type === "delivery") {
+      let currentAddress = {
+        // type, geocode, house_no, street, locality, landmark, postal_code, city, state, country
+        unique: createUniqueIdForAddress(
+          rawAddresses[i]?.type,
+          null, // geocode
+          rawAddresses[i]?.streetNumber,
+          rawAddresses[i]?.street,
+          null, // locality
+          null, // landmark
+          rawAddresses[i]?.postal_code,
+          rawAddresses[i]?.city,
+          rawAddresses[i]?.state,
+          rawAddresses[i]?.country,
+        ),
+        address_id: rawAddresses[i]?.id,
+        address_type: rawAddresses[i]?.type,
+        geocode: null,
+        house_no: rawAddresses[i]?.streetNumber,
+        street: rawAddresses[i]?.street,
+        locality: null,
+        landmark: null,
+        postal_code: rawAddresses[i]?.postalCode,
+        city: rawAddresses[i]?.city,
+        state: rawAddresses[i]?.state,
+        country: rawAddresses[i]?.country,
+      }
+      proccessedAddresses.push(currentAddress);
     }
-    proccessedAddresses.push(currentAddress);
   }
   return proccessedAddresses;
 
@@ -294,8 +323,8 @@ function resolveScheduledOrders(data, orderDetails) {
       order_id: data?.order?.get?.id,
       created_at_date: formatDateAndTime(data?.order?.get?.createdAt).date,
       created_at_time: formatDateAndTime(data?.order?.get?.createdAt).time,
-      order_nmv: current_nmv,
-      order_gmv: current_gmv,
+      order_nmv: orderDetails?.price?.net, // current_nmv,
+      order_gmv: orderDetails?.price?.gross,
       discount: 0,
       discount_code: null, // need to confirm in meeting
       delivery_fee: null, // need to confirm in meeting
