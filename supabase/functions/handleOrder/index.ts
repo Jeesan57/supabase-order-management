@@ -24,7 +24,8 @@ const supabase = createClient(supabase_url, supabase_anon_key);
 
 
 function createUniqueIdForCustomer(phone, email, firstName, lastName) {
-  let unique = "" + phone + email + firstName + lastName;
+  // let unique = "" + phone + email + firstName + lastName;
+  let unique = "" + phone + "_" + email;
   return unique;
 }
 
@@ -211,6 +212,7 @@ function getDeliveryType(city) {
   // then Delivery Type = Mumbai_hyperlocal
   // else Delivery Type = rest_of_India"
   let delivery_type = "rest_of_India";
+  if (!city) return delivery_type;
   // check city case (capital/small)
   if (
     city.toLowerCase() === "mumbai" ||
