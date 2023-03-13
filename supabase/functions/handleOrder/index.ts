@@ -73,6 +73,19 @@ function calculateDeliveryCount(quantity, quantityPerDelivery) {
 }
 
 
+function getDeliveryFee(meta) {
+  const deliveryFeeObj = meta.find((obj) => obj.key === "deliveryFee"); // Find the object with key "deliveryFee"
+
+  if (deliveryFeeObj) {
+    const obj = JSON.parse(deliveryFeeObj.value); // Parse the JSON string into an object
+    return obj.deliveryFee; // Return the deliveryFee value
+  } else {
+    return null; // Return null if the deliveryFee object is not found
+  }
+}
+
+
+
 
 
 function formatDateAndTime(isoString) {
@@ -329,7 +342,7 @@ function resolveScheduledOrders(data, orderDetails) {
       order_gmv: orderDetails?.price?.gross,
       discount: 0,
       discount_code: null, // need to confirm in meeting
-      delivery_fee: null, // need to confirm in meeting
+      delivery_fee: getDeliveryFee(data?.order?.get?.meta),
       currency: orderDetails?.price?.currency,
       razorpay_order_id: null, // need to confirm in meeting
       razorpay_receipt: null, // need to confirm in meeting
@@ -374,7 +387,7 @@ function processOrders(data) {
         order_gmv: data?.order?.get?.cart[i]?.price?.gross,
         discount: 0,
         discount_code: null, // need to confirm in meeting
-        delivery_fee: null, // need to confirm in meeting
+        delivery_fee: getDeliveryFee(data?.order?.get?.meta),
         currency: data?.order?.get?.cart[i]?.price?.currency,
         razorpay_order_id: null, // need to confirm in meeting
         razorpay_receipt: null, // need to confirm in meeting
