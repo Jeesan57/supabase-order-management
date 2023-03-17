@@ -133,7 +133,7 @@ function processCustomerFromCustomerData(customerData) {
   if (!customerData) return null;
   let processedCustomerData = {
     unique: createUniqueIdForCustomer(customerData.phone, customerData.email, customerData.firstName, customerData.lastName),
-    customer_id: customerData.identifier,
+    // customer_id: customerData.identifier,
     phone: customerData.phone,
     email: customerData.email,
     firstname: customerData.firstName,
@@ -163,7 +163,7 @@ function processAddressesFromData(data) {
           rawAddresses[i]?.state,
           rawAddresses[i]?.country,
         ),
-        address_id: rawAddresses[i]?.id,
+        //address_id: rawAddresses[i]?.id,
         address_type: rawAddresses[i]?.type,
         geocode: null,
         house_no: rawAddresses[i]?.streetNumber,
@@ -183,11 +183,15 @@ function processAddressesFromData(data) {
 }
 
 async function saveCustomerToDatabase(customerData) {
-  await supabase.from('customers').upsert([customerData]);
+  let { data, error } = await supabase.from('customers').upsert(customerData, {onConflict: "unique" }).select();
+  if (!error && data) return data[0]?.customer_id;
+  else return null;
 }
 
 async function saveAddressesToDatabase(addresses) {
-  await supabase.from('address').upsert([...addresses]);
+  let { data, error } = await supabase.from('address').upsert([...addresses], { onConflict: "unique" }).select();
+  if (!error && data) return data[0]?.address_id;
+  else return null;
 }
 
 async function saveOrdersToDatabase(orders) {
@@ -299,7 +303,7 @@ function getSchedule(orderMeta) {
 }
 
 
-function resolveScheduledOrders(data, orderDetails) {
+function resolveScheduledOrders(data, orderDetails, customer_id,delivery_address_id) {
 
 
   let orders = [];
@@ -346,8 +350,8 @@ function resolveScheduledOrders(data, orderDetails) {
       currency: orderDetails?.price?.currency,
       razorpay_order_id: null, // need to confirm in meeting
       razorpay_receipt: null, // need to confirm in meeting
-      customer_id: data?.order?.get?.customer?.identifier,
-      delivery_address_id: getDeliveryAddressID(data?.order?.get?.customer?.addresses),
+      customer_id: customer_id,
+      delivery_address_id: delivery_address_id,
       product_sku: orderDetails?.sku,
       quantity: currentQuantity,
       payment_status: "Paid Online",
@@ -371,7 +375,7 @@ function resolveScheduledOrders(data, orderDetails) {
 
 // either {single: true, order:{}}
 // or {single: false, orders: [{}, {}, {}]}
-function processOrders(data) {
+function processOrders(data, customer_id, delivery_address_id) {
 
 
   let orders = [];
@@ -391,8 +395,8 @@ function processOrders(data) {
         currency: data?.order?.get?.cart[i]?.price?.currency,
         razorpay_order_id: null, // need to confirm in meeting
         razorpay_receipt: null, // need to confirm in meeting
-        customer_id: data?.order?.get?.customer?.identifier,
-        delivery_address_id: getDeliveryAddressID(data?.order?.get?.customer?.addresses),
+        customer_id: customer_id,
+        delivery_address_id: delivery_address_id,
         product_sku: data?.order?.get?.cart[i]?.sku,
         quantity: data?.order?.get?.cart[i]?.quantity,
         payment_status: "Paid Online",
@@ -409,7 +413,7 @@ function processOrders(data) {
     }
     // else sheduled
     else {
-      let scheduledOrders = resolveScheduledOrders(data, data?.order?.get?.cart[i]);
+      let scheduledOrders = resolveScheduledOrders(data, data?.order?.get?.cart[i], customer_id, delivery_address_id);
 
       orders = [...orders, ...scheduledOrders];
     }
@@ -428,13 +432,13 @@ serve(async (req: any) => {
 
   // processCustomerData and save data to database
   const processedCustomerData = processCustomerFromCustomerData(requestData?.order?.get?.customer);
-  await saveCustomerToDatabase(processedCustomerData);
+  let customer_id = await saveCustomerToDatabase(processedCustomerData);
 
   // process addresses and upsert them to database
   const proccessedAddresses = processAddressesFromData(requestData);
-  await saveAddressesToDatabase(proccessedAddresses);
+  let delivery_address_id = await saveAddressesToDatabase(proccessedAddresses);
 
-  let processedOrders = processOrders(requestData);
+  let processedOrders = processOrders(requestData, customer_id, delivery_address_id);
   let error = await saveOrdersToDatabase(processedOrders);
 
 
