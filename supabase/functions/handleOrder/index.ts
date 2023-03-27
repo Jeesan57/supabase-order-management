@@ -14,29 +14,6 @@ const supabase = createClient(supabase_url, supabase_anon_key);
 
 
 
-// get payload data from supabase request
-// step 1:
-// get customer data from order
-// save customer to db if is not saved
-// otherwise, update data
-
-// step 2:
-// get addresses from the data
-// upsert the addresses data to the address table
-
-
-function createUniqueIdForCustomer(phone, email, firstName, lastName) {
-    // let unique = "" + phone + email + firstName + lastName;
-    let unique = "" + phone + "_" + email;
-    return unique;
-}
-
-
-function createUniqueIdForAddress(type, geocode, house_no, street, locality, landmark, postal_code, city, state, country) {
-    let unique = "" + type + geocode + house_no + street + locality + landmark + postal_code + city + state + country;
-    return unique;
-}
-
 
 
 function calculateDeliveryDates(isoString, startDate, schedule, totalDeliveryCount) {
@@ -44,7 +21,7 @@ function calculateDeliveryDates(isoString, startDate, schedule, totalDeliveryCou
 
     const startDateComponents = startDate.split('/');
     const startDay = Number(startDateComponents[0]);
-    const startMonth = Number(startDateComponents[1]) - 1; // JavaScript months are 0-based
+    const startMonth = Number(startDateComponents[1]) - 1;
     const startYear = Number(startDateComponents[2]);
     const startDateObject = new Date(startYear, startMonth, startDay);
 
@@ -58,7 +35,7 @@ function calculateDeliveryDates(isoString, startDate, schedule, totalDeliveryCou
         if (currentDayIndex >= 0) {
             // The current day is in the schedule
             const currentDay = currentDateObject.getDate();
-            const currentMonth = currentDateObject.getMonth() + 1; // JavaScript months are 0-based
+            const currentMonth = currentDateObject.getMonth() + 1;
             const currentYear = currentDateObject.getFullYear();
             const deliveryDate = `${currentYear}-${String(currentMonth).padStart(2, '0')}-${String(currentDay).padStart(2, '0')}`;
             deliveryDates.push(deliveryDate);
@@ -76,13 +53,12 @@ function calculateDeliveryCount(quantity, quantityPerDelivery) {
 
 
 function getDeliveryFee(meta) {
-    const deliveryFeeObj = meta.find((obj) => obj.key === "deliveryFee"); // Find the object with key "deliveryFee"
-
+    const deliveryFeeObj = meta.find((obj) => obj.key === "deliveryFee");
     if (deliveryFeeObj) {
-        const obj = JSON.parse(deliveryFeeObj.value); // Parse the JSON string into an object
-        return obj.deliveryFee; // Return the deliveryFee value
+        const obj = JSON.parse(deliveryFeeObj.value);
+        return obj.deliveryFee;
     } else {
-        return null; // Return null if the deliveryFee object is not found
+        return null;
     }
 }
 
@@ -93,7 +69,6 @@ function getDeliveryFee(meta) {
 function formatDateAndTime(isoString) {
     const isoRegex = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2}).(\d{3})Z$/;
     if (!isoRegex.test(isoString)) {
-        // Return the formatted date and time as an object (null, null)
         return { date: null, time: null };
     }
 
@@ -134,8 +109,6 @@ function addDaysToIsoDate(isoString, days) {
 function processCustomerFromCustomerData(customerData) {
     if (!customerData) return null;
     let processedCustomerData = {
-        unique: createUniqueIdForCustomer(customerData.phone, customerData.email, customerData.firstName, customerData.lastName),
-        // customer_id: customerData.identifier,
         phone: customerData.phone,
         email: customerData.email,
         firstname: customerData.firstName,
@@ -209,6 +182,19 @@ function getLocality(metaArray) {
 }
 
 
+function getTitle(metaArray) {
+    let title = '';
+
+    metaArray.forEach(meta => {
+        if (meta.key === 'title') {
+            title = meta.value;
+        }
+    });
+
+    return title;
+}
+
+
 
 function getLandmark(metaArray) {
     let landmark = '';
@@ -233,20 +219,6 @@ function processAddressesFromData(data) {
     for (let i = 0; i < rawAddresses?.length; i++) {
         if (rawAddresses[i].type === "delivery") {
             let currentAddress = {
-                // type, geocode, house_no, street, locality, landmark, postal_code, city, state, country
-                unique: createUniqueIdForAddress(
-                    rawAddresses[i]?.type,
-                    null, // geocode
-                    rawAddresses[i]?.streetNumber,
-                    rawAddresses[i]?.street,
-                    null, // locality
-                    null, // landmark
-                    rawAddresses[i]?.postal_code,
-                    rawAddresses[i]?.city,
-                    rawAddresses[i]?.state,
-                    rawAddresses[i]?.country,
-                ),
-                //address_id: rawAddresses[i]?.id,
                 address_type: rawAddresses[i]?.type,
                 geocode: getGeocode(rawAddresses[i]?.meta),
                 house_no: rawAddresses[i]?.streetNumber,
@@ -258,6 +230,7 @@ function processAddressesFromData(data) {
                 city: rawAddresses[i]?.city,
                 state: rawAddresses[i]?.state,
                 country: rawAddresses[i]?.country,
+                title: getTitle(rawAddresses[i].meta)
             }
             delivery_address = currentAddress;
             break;
@@ -267,20 +240,10 @@ function processAddressesFromData(data) {
 
 }
 
-async function saveCustomerToDatabase(customerData) {
-    let { data, error } = await supabase.from('customers').upsert(customerData, { onConflict: "unique" }).select();
-    if (!error && data) return data[0]?.customer_id;
-    else return null;
-}
 
-async function saveAddressesToDatabase(addresses) {
-    let { data, error } = await supabase.from('address').upsert([...addresses], { onConflict: "unique" }).select();
-    if (!error && data) return data[0]?.address_id;
-    else return null;
-}
 
 async function saveOrdersToDatabase(orders) {
-    const { data, error } = await supabase.from('orders').upsert([...orders]);
+    let { data, error } = await supabase.from('orders').upsert([...orders], { onConflict: "id" }).select();
     return error;
 }
 
@@ -306,8 +269,7 @@ function getDeliveryAddressCity(addresses) {
     return delivery_address_city;
 }
 
-// Mumbai => mumbai MumBai => lowecase
-// mumbai => mumbai hyperlocal
+
 
 function getDeliveryType(city) {
     // "if city = mumbai”, “मुंबई“, “thane”, “ठाणे, ""Navi Mumbai"" , ""नवी मुंबई""
@@ -315,7 +277,6 @@ function getDeliveryType(city) {
     // else Delivery Type = rest_of_India"
     let delivery_type = "rest_of_India";
     if (!city) return delivery_type;
-    // check city case (capital/small)
     if (
         city.toLowerCase() === "mumbai" ||
         city === "मुंबई" ||
@@ -330,12 +291,6 @@ function getDeliveryType(city) {
 
 function isSingleOrder(order) {
     let isSingle = true;
-    // "if product metadata path = /category/flexi-subscriptions/*
-    // then Subs for for 1 - (n - 1) and Subs(L) for nth
-    // else Single Order"
-
-    // str.includes('MongoDB')
-
     for (let i = 0; i < order?.meta?.length; i++) {
         if (order?.meta[i].key === "path") {
             let pathValue = order?.meta[i].value;
@@ -345,16 +300,12 @@ function isSingleOrder(order) {
             }
         }
     }
-
     return isSingle;
-
-
 }
 
 
 
 function getQuantityPerDelivery(orderMeta) {
-
     let quantityPerDelivery = null;
     for (let i = 0; i < orderMeta?.length; i++) {
         if (orderMeta[i]?.key === 'quantityPerDelivery') {
@@ -388,11 +339,10 @@ function getSchedule(orderMeta) {
 }
 
 
-function resolveScheduledOrders(data, orderDetails, customerData, deliveryAddress) {
+function resolveScheduledOrders(data, orderDetails, customerData, deliveryAddress, cartTotal) {
 
 
     let orders = [];
-    // find out the number of single orders to create
     let quantityPerDelivery = getQuantityPerDelivery(orderDetails?.meta);
     let quantity = orderDetails?.quantity;
     let totalDeliveryCount = calculateDeliveryCount(quantity, quantityPerDelivery);
@@ -430,17 +380,17 @@ function resolveScheduledOrders(data, orderDetails, customerData, deliveryAddres
             order_id: data?.order?.get?.id,
             created_at_date: formatDateAndTime(data?.order?.get?.createdAt).date,
             created_at_time: formatDateAndTime(data?.order?.get?.createdAt).time,
-            order_nmv: orderDetails?.price?.net, // current_nmv,
-            order_gmv: orderDetails?.price?.gross,
+            order_nmv: cartTotal?.net,
+            order_gmv: cartTotal?.gross,
             discount: 0,
-            discount_code: null, // need to confirm in meeting
+            discount_code: '',
             delivery_fee: getDeliveryFee(data?.order?.get?.meta),
             currency: orderDetails?.price?.currency,
-            razorpay_order_id: null, // need to confirm in meeting
-            razorpay_receipt: null, // need to confirm in meeting
+            razorpay_order_id: null,
+            razorpay_receipt: null,
             phone: customerData?.phone,
             email_id: customerData?.email,
-            title: '',
+            title: deliveryAddress?.title,
             first_name: customerData?.firstname,
             last_name: customerData?.lastname,
             address_type: deliveryAddress?.address_type,
@@ -459,8 +409,8 @@ function resolveScheduledOrders(data, orderDetails, customerData, deliveryAddres
             vendor: vendor,
             size: size,
             quantity: currentQuantity,
-            sale_price: 0,
-            mrp: 0,
+            sale_price: orderDetails?.price?.net,
+            mrp: orderDetails?.price?.gross,
             payment_status: "Paid Online",
             delivery_type: getDeliveryType(getDeliveryAddressCity(data?.order?.get?.customer?.addresses)),
             courier_name: '',
@@ -482,8 +432,6 @@ function resolveScheduledOrders(data, orderDetails, customerData, deliveryAddres
 }
 
 
-// either {single: true, order:{}}
-// or {single: false, orders: [{}, {}, {}]}
 function processOrders(data, customerData, deliveryAddress) {
 
 
@@ -496,17 +444,17 @@ function processOrders(data, customerData, deliveryAddress) {
                 order_id: data?.order?.get?.id,
                 created_at_date: formatDateAndTime(data?.order?.get?.createdAt).date,
                 created_at_time: formatDateAndTime(data?.order?.get?.createdAt).time,
-                order_nmv: data?.order?.get?.cart[i]?.price?.net,
-                order_gmv: data?.order?.get?.cart[i]?.price?.gross,
+                order_nmv: data?.order?.get?.total?.net,
+                order_gmv: data?.order?.get?.total?.gross,
                 discount: 0,
-                discount_code: null, // need to confirm in meeting
+                discount_code: '',
                 delivery_fee: getDeliveryFee(data?.order?.get?.meta),
                 currency: data?.order?.get?.cart[i]?.price?.currency,
-                razorpay_order_id: null, // need to confirm in meeting
-                razorpay_receipt: null, // need to confirm in meeting
+                razorpay_order_id: null,
+                razorpay_receipt: null,
                 phone: customerData?.phone,
                 email_id: customerData?.email,
-                title: '',
+                title: deliveryAddress?.title,
                 first_name: customerData?.firstname,
                 last_name: customerData?.lastname,
                 address_type: deliveryAddress?.address_type,
@@ -525,8 +473,8 @@ function processOrders(data, customerData, deliveryAddress) {
                 vendor: getVendor(data?.order?.get?.cart[i]?.meta),
                 size: getSize(data?.order?.get?.cart[i]?.meta),
                 quantity: data?.order?.get?.cart[i]?.quantity,
-                sale_price: 0,
-                mrp: 0,
+                sale_price: data?.order?.get?.cart[i]?.price?.net,
+                mrp: data?.order?.get?.cart[i]?.price?.gross,
                 payment_status: "Paid Online",
                 delivery_type: getDeliveryType(getDeliveryAddressCity(data?.order?.get?.customer?.addresses)),
                 courier_name: '',
@@ -543,7 +491,7 @@ function processOrders(data, customerData, deliveryAddress) {
         }
         // else sheduled
         else {
-            let scheduledOrders = resolveScheduledOrders(data, data?.order?.get?.cart[i], customerData, deliveryAddress);
+            let scheduledOrders = resolveScheduledOrders(data, data?.order?.get?.cart[i], customerData, deliveryAddress, data?.order?.get?.total);
 
             orders = [...orders, ...scheduledOrders];
         }
