@@ -62,11 +62,16 @@ function getDeliveryFee(meta) {
     }
 }
 
-
+function convertUtcToIst(utcString) {
+    const utcDate = new Date(utcString);
+    const istDate = new Date(utcDate.getTime() + (5.5 * 60 * 60 * 1000));
+    return istDate.toISOString();
+}
 
 
 
 function formatDateAndTime(isoString) {
+    isoString = convertUtcToIst(isoString);
     const isoRegex = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2}).(\d{3})Z$/;
     if (!isoRegex.test(isoString)) {
         return { date: null, time: null };
@@ -94,6 +99,7 @@ function formatDateAndTime(isoString) {
 
 
 function addDaysToIsoDate(isoString, days) {
+    isoString = convertUtcToIst(isoString);
     const date = new Date(isoString);
     const newDate = new Date(date.getTime() + days * 24 * 60 * 60 * 1000);
     const year = newDate.getFullYear();
@@ -215,9 +221,17 @@ function getLandmark(metaArray) {
 function processAddressesFromData(data) {
 
     let rawAddresses = data?.order?.get?.customer?.addresses;
-    let delivery_address = null;
+    let address = null;
+    let hasDeliveryAddress = false;
+    for (let i = 0; i < rawAddresses?.length; i++){
+        if (rawAddresses[i].type == "delivery") {
+            hasDeliveryAddress = true;
+            break;
+        }
+    }
     for (let i = 0; i < rawAddresses?.length; i++) {
-        if (rawAddresses[i].type === "delivery") {
+        if (hasDeliveryAddress && rawAddresses[i].type === "delivery") 
+        {
             let currentAddress = {
                 address_type: rawAddresses[i]?.type,
                 geocode: getGeocode(rawAddresses[i]?.meta),
@@ -232,11 +246,29 @@ function processAddressesFromData(data) {
                 country: rawAddresses[i]?.country,
                 title: getTitle(rawAddresses[i].meta)
             }
-            delivery_address = currentAddress;
+            address = currentAddress;
+            break;
+        }
+        else if(!hasDeliveryAddress && rawAddresses[i]?.type !== "delivery"){
+            let currentAddress = {
+                address_type: rawAddresses[i]?.type,
+                geocode: getGeocode(rawAddresses[i]?.meta),
+                house_no: rawAddresses[i]?.streetNumber,
+                street: rawAddresses[i]?.street,
+                locality: getLocality(rawAddresses[i]?.meta),
+                landmark: getLandmark(rawAddresses[i]?.meta),
+                postal_code: rawAddresses[i]?.postalCode,
+                plus_code: getAddressPlusCode(rawAddresses[i]?.meta),
+                city: rawAddresses[i]?.city,
+                state: rawAddresses[i]?.state,
+                country: rawAddresses[i]?.country,
+                title: getTitle(rawAddresses[i].meta)
+            }
+            address = currentAddress;
             break;
         }
     }
-    return delivery_address;
+    return address;
 
 }
 
@@ -260,8 +292,19 @@ function getDeliveryAddressID(addresses) {
 
 function getDeliveryAddressCity(addresses) {
     let delivery_address_city = null;
+    let hasDeliveryAddress = false;
+    for (let i = 0; i < addresses.length; i++){
+        if (addresses[i]?.type === "delivery") {
+            hasDeliveryAddress = true;
+            break;
+        }
+    }
     for (let i = 0; i < addresses.length; i++) {
-        if (addresses[i]?.type === 'delivery') {
+        if (hasDeliveryAddress && addresses[i]?.type === 'delivery') {
+            delivery_address_city = addresses[i]?.city;
+            break;
+        }
+        else if (!hasDeliveryAddress && addresses[i].type !== "delivery") {
             delivery_address_city = addresses[i]?.city;
             break;
         }
@@ -353,6 +396,9 @@ function resolveScheduledOrders(data, orderDetails, customerData, deliveryAddres
     let vendor = getVendor(orderDetails?.meta);
     let size = getSize(orderDetails?.meta);
 
+    let salePrice = orderDetails?.price?.net / orderDetails?.quantity;
+    let mrp = orderDetails?.price?.gross / orderDetails?.quantity;
+
     for (let i = 0; i < totalDeliveryCount; i++) {
 
 
@@ -409,8 +455,8 @@ function resolveScheduledOrders(data, orderDetails, customerData, deliveryAddres
             vendor: vendor,
             size: size,
             quantity: currentQuantity,
-            sale_price: orderDetails?.price?.net,
-            mrp: orderDetails?.price?.gross,
+            sale_price: salePrice,
+            mrp: mrp,
             payment_status: "Paid Online",
             delivery_type: getDeliveryType(getDeliveryAddressCity(data?.order?.get?.customer?.addresses)),
             courier_name: '',
