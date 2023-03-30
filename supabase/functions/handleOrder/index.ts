@@ -115,8 +115,7 @@ function addDaysToIsoDate(isoString, days) {
 function processCustomerFromCustomerData(customerData) {
     if (!customerData) return null;
     let processedCustomerData = {
-        phone: customerData.phone,
-        email: customerData.email,
+        phone: customerData.identifier,
         firstname: customerData.firstName,
         lastname: customerData.lastName,
     };
@@ -215,6 +214,17 @@ function getLandmark(metaArray) {
 }
 
 
+function getAddressType(metaArray) {
+    let type = '';
+
+    metaArray.forEach(meta => {
+        if (meta.key === 'tag') {
+            type = meta.value;
+        }
+    });
+
+    return type;
+}
 
 
 
@@ -223,17 +233,16 @@ function processAddressesFromData(data) {
     let rawAddresses = data?.order?.get?.customer?.addresses;
     let address = null;
     let hasDeliveryAddress = false;
-    for (let i = 0; i < rawAddresses?.length; i++){
+    for (let i = 0; i < rawAddresses?.length; i++) {
         if (rawAddresses[i].type == "delivery") {
             hasDeliveryAddress = true;
             break;
         }
     }
     for (let i = 0; i < rawAddresses?.length; i++) {
-        if (hasDeliveryAddress && rawAddresses[i].type === "delivery") 
-        {
+        if (hasDeliveryAddress && rawAddresses[i].type === "delivery") {
             let currentAddress = {
-                address_type: rawAddresses[i]?.type,
+                address_type: getAddressType(rawAddresses[i]?.meta),
                 geocode: getGeocode(rawAddresses[i]?.meta),
                 house_no: rawAddresses[i]?.streetNumber,
                 street: rawAddresses[i]?.street,
@@ -244,14 +253,16 @@ function processAddressesFromData(data) {
                 city: rawAddresses[i]?.city,
                 state: rawAddresses[i]?.state,
                 country: rawAddresses[i]?.country,
-                title: getTitle(rawAddresses[i].meta)
+                title: getTitle(rawAddresses[i].meta),
+                email: rawAddresses[i].email,
+
             }
             address = currentAddress;
             break;
         }
-        else if(!hasDeliveryAddress && rawAddresses[i]?.type !== "delivery"){
+        else if (!hasDeliveryAddress && rawAddresses[i]?.type !== "delivery") {
             let currentAddress = {
-                address_type: rawAddresses[i]?.type,
+                address_type: getAddressType(rawAddresses[i]?.meta),
                 geocode: getGeocode(rawAddresses[i]?.meta),
                 house_no: rawAddresses[i]?.streetNumber,
                 street: rawAddresses[i]?.street,
@@ -262,7 +273,8 @@ function processAddressesFromData(data) {
                 city: rawAddresses[i]?.city,
                 state: rawAddresses[i]?.state,
                 country: rawAddresses[i]?.country,
-                title: getTitle(rawAddresses[i].meta)
+                title: getTitle(rawAddresses[i].meta),
+                email: rawAddresses[i].email,
             }
             address = currentAddress;
             break;
@@ -293,7 +305,7 @@ function getDeliveryAddressID(addresses) {
 function getDeliveryAddressCity(addresses) {
     let delivery_address_city = null;
     let hasDeliveryAddress = false;
-    for (let i = 0; i < addresses.length; i++){
+    for (let i = 0; i < addresses.length; i++) {
         if (addresses[i]?.type === "delivery") {
             hasDeliveryAddress = true;
             break;
@@ -396,8 +408,7 @@ function resolveScheduledOrders(data, orderDetails, customerData, deliveryAddres
     let vendor = getVendor(orderDetails?.meta);
     let size = getSize(orderDetails?.meta);
 
-    let salePrice = orderDetails?.price?.net / orderDetails?.quantity;
-    let mrp = orderDetails?.price?.gross / orderDetails?.quantity;
+
 
     for (let i = 0; i < totalDeliveryCount; i++) {
 
@@ -417,9 +428,11 @@ function resolveScheduledOrders(data, orderDetails, customerData, deliveryAddres
             deliveryLeft = 0;
         }
 
-        let current_nmv = (orderDetails?.price?.net * currentQuantity) / quantity;
-        let current_gmv = (orderDetails?.price?.gross * currentQuantity) / quantity;
+        // let salePrice = (orderDetails?.price?.net * currentQuantity) / quantity;
+        // let mrp = (orderDetails?.price?.gross * currentQuantity) / quantity;
 
+        let salePrice = orderDetails?.price?.net / quantity;
+        let mrp = orderDetails?.price?.gross / quantity;
 
 
         let order = {
@@ -435,7 +448,7 @@ function resolveScheduledOrders(data, orderDetails, customerData, deliveryAddres
             razorpay_order_id: null,
             razorpay_receipt: null,
             phone: customerData?.phone,
-            email_id: customerData?.email,
+            email_id: deliveryAddress?.email,
             title: deliveryAddress?.title,
             first_name: customerData?.firstname,
             last_name: customerData?.lastname,
@@ -486,6 +499,9 @@ function processOrders(data, customerData, deliveryAddress) {
     for (let i = 0; i < data?.order?.get?.cart?.length; i++) {
         // if Order is single order
         if (isSingleOrder(data?.order?.get?.cart[i])) {
+            let quantity = data?.order?.get?.cart[i]?.quantity;
+            let sale_price = data?.order?.get?.cart[i]?.price?.net / quantity;
+            let mrp = data?.order?.get?.cart[i]?.price?.gross / quantity;
             let order = {
                 order_id: data?.order?.get?.id,
                 created_at_date: formatDateAndTime(data?.order?.get?.createdAt).date,
@@ -499,7 +515,7 @@ function processOrders(data, customerData, deliveryAddress) {
                 razorpay_order_id: null,
                 razorpay_receipt: null,
                 phone: customerData?.phone,
-                email_id: customerData?.email,
+                email_id: deliveryAddress?.email,
                 title: deliveryAddress?.title,
                 first_name: customerData?.firstname,
                 last_name: customerData?.lastname,
@@ -518,9 +534,9 @@ function processOrders(data, customerData, deliveryAddress) {
                 product_name: data?.order?.get?.cart[i]?.name,
                 vendor: getVendor(data?.order?.get?.cart[i]?.meta),
                 size: getSize(data?.order?.get?.cart[i]?.meta),
-                quantity: data?.order?.get?.cart[i]?.quantity,
-                sale_price: data?.order?.get?.cart[i]?.price?.net,
-                mrp: data?.order?.get?.cart[i]?.price?.gross,
+                quantity: quantity,
+                sale_price: sale_price,
+                mrp: mrp,
                 payment_status: "Paid Online",
                 delivery_type: getDeliveryType(getDeliveryAddressCity(data?.order?.get?.customer?.addresses)),
                 courier_name: '',
